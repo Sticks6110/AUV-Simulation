@@ -60,7 +60,7 @@ class AUVSim:
     """
     """
 
-    def __init__(self, lat: float, lon: float, mass: float, drag_cof: float, ballast: float):
+    def __init__(self, mass: float, drag_cof: float, ballast: float):
         """
         Latitude: Starting latitude
         Longitude: Starting longitude
@@ -69,10 +69,6 @@ class AUVSim:
         Motor Force: Newtons
         Ballast: 0-1 range for how full the ballast tank is. 0.5 = neutrally boyant, 0 = fully boyant (floating)
         """
-        self._lat_origin = lat
-        self._lon_origin = lon
-        self._lat = lat
-        self._lon = lon
 
         self._mass = mass
         self._drag_cof = drag_cof
@@ -99,18 +95,17 @@ class AUVSim:
             0.0
         ])
 
-        self.thrust_direction = np.array([
+        self._thrust_direction = np.array([
             0.0,    #east
             1.0,    #north
             0.0     #depth
         ])
 
-        self._x = 0 #east
-        self._y = 0 #north
-        self._z = 0 #depth
+        self._position = np.zeros(3) #x = east, y = north, z = depth
+        self._velocity = np.zeros(3)
 
-        self._heading = 0.0
-        self._angular_velocity = 0.0
+        self._orientation = np.zeros(3)
+        self._angular_velocity = np.zeros(3)
 
         self._time = 0
         self._delta_time = 0
@@ -121,28 +116,54 @@ class AUVSim:
         """
         self._delta_time = delta_time
         self._time += delta_time
-        self.simulate(delta_time)
 
-    def simulate_motor(self, motor: Motor, motor_position: np.array, motor_direction: np.array):
-        """
-        Runs the simulation.
-        """
-        thrust = motor.get_thrust()
-        force = thrust * motor_direction
-        torque = np.cross(motor_position, force)
+        total_torque = np.zeros(3)
+        total_force = np.zeros(3)
 
-    def update_lat_lon(self):
-        """
-        Updates the latitude and longitude of the AUV
-        using the x and y position. 
-        """
-        lat_rad = math.radians(self._lat_origin)
+        motors = [
+            (self._left_motor, self._left_motor_pos),
+            (self._center_motor, self._center_motor_pos),
+            (self._right_motor, self._right_motor_pos)
+        ]
 
-        dlat = self._y / 6371000
-        dlon = self._x / (6371000 * math.cos(lat_rad))
+        world_direction = self.rotate_vector(self._thrust_direction)
 
-        self._lat = self._lat_origin + math.degrees(dlat)
-        self._lon = self._lon_origin + math.degrees(dlon)
+        for motor, position in motors:
+            thrust = motor.get_thrust()
+            force = thrust * world_direction
+
+            world_position = self.rotate_vector(position)
+
+            total_force += force
+            total_torque += np.cross(world_position, force)
+
+        # Angular acceleration
+        angular_acceleration = (
+            total_torque / self.get_inertia()
+        )
+
+        # Angular velocity
+        self._angular_velocity += (
+            angular_acceleration * delta_time
+        )
+
+        # Orientation
+        self._orientation += (
+            self._angular_velocity * delta_time
+        )
+
+        # Drag
+        drag_force = -self._drag_cof * self._velocity
+        total_force += drag_force
+
+        # Acceleration
+        acceleration = total_force / self.get_mass()
+
+        # Velocity
+        self._velocity += acceleration * delta_time
+
+        # Position
+        self._position += self._velocity * delta_time
 
     def power_middle_motor(self, ammount: float):
         """
@@ -165,4 +186,64 @@ class AUVSim:
             """
             self._right_motor.set_throttle(ammount)
 
-    
+    def get_inertia(self) -> np.array:
+            """
+            Gets the moment of inertia for a rectanglular prism.
+            """
+
+            mass = self._mass
+
+            ix = 0.01625 * mass
+            iy = 0.505 * mass
+            iz = 0.51125 * mass
+
+            return np.array([ix, iy, iz])
+
+    def get_mass(self) -> float:
+         """
+         Calculates the mass for the AUV.
+         """
+         return self._mass
+
+    def get_rotation_matrix(self) -> np.ndarray:
+        roll, pitch, yaw = self._orientation
+
+        cr = np.cos(roll)
+        sr = np.sin(roll)
+
+        cp = np.cos(pitch)
+        sp = np.sin(pitch)
+
+        cy = np.cos(yaw)
+        sy = np.sin(yaw)
+
+        rx = np.array([
+            [1, 0, 0],
+            [0, cr, -sr],
+            [0, sr, cr]
+        ])
+
+        ry = np.array([
+            [cp, 0, sp],
+            [0, 1, 0],
+            [-sp, 0, cp]
+        ])
+
+        rz = np.array([
+            [cy, -sy, 0],
+            [sy, cy, 0],
+            [0, 0, 1]
+        ])
+
+        return rz @ ry @ rx
+
+    def rotate_vector(self, vector: np.ndarray) -> np.ndarray:
+        """
+        Rotates a local vector into world coordinates
+        based on the AUV's orientation.
+        """
+        rotation_matrix = self.get_rotation_matrix()
+        return rotation_matrix @ vector
+
+    def __str__(self) -> str:
+        return "(X, Y, Z) : " + str(self._position)  + " | (roll, pitch, yaw) : " + str(self._orientation) + " | Velocity : " + str(self._velocity)
