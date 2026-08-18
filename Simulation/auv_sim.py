@@ -152,8 +152,17 @@ class AUVSim:
             self._angular_velocity * delta_time
         )
 
+        # Gravity
+        gravity_force = self.get_mass() * -9.81 * np.array([0, 0, 1.0])
+        total_force += gravity_force
+
+        # Buoyancy
+        if (self._position[2] <= 0):
+            buoyancy_force = 1025 * 0.015 * 9.81 * np.array([0, 0, 1.0])
+            total_force += buoyancy_force
+
         # Drag
-        drag_force = -self._drag_cof * self._velocity
+        drag_force = 0.5 * 1025 * (self._velocity ** 2) * self._drag_cof * 0.015
         total_force += drag_force
 
         # Acceleration
