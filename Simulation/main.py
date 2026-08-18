@@ -11,10 +11,12 @@ def get_input(auv: AUVSim):
     left = float(input("Left Throttle 0-1: "))
     cent = float(input("Center Throttle 0-1: "))
     right = float(input("Right Throttle 0-1: "))
+    ballast = float(input("Ballast Liters: "))
 
     auv.power_left_motor(left)
     auv.power_middle_motor(cent)
     auv.power_right_motor(right)
+    auv.set_ballast(ballast)
 
     for i in range(0, 100):
         auv.step_time(0.01)
@@ -34,5 +36,5 @@ if __name__ == '__main__':
     #depth_data = data.load_bathymetry_data(args.depthdata)
 
     #ocean = OceanSim(depth_data)
-    auv = AUVSim(5, 0.15, 0.5)
+    auv = AUVSim(10, 0.15, 5, 500)
     get_input(auv)

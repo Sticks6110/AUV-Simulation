@@ -10,16 +10,19 @@ with dpg.window(label="AUV Data", tag="AUVWin"):
     dpg.add_text("POSITION")
     dpg.add_separator()
     with dpg.table(header_row=True):
-        dpg.add_table_column(label="Parameter", width_fixed=True, init_width_or_weight=150)
+        dpg.add_table_column(label="", width_fixed=True, init_width_or_weight=50)
+        dpg.add_table_column(label="", width_fixed=True, init_width_or_weight=150)
         dpg.add_table_column(label="Lat", width_fixed=True, init_width_or_weight=80)
         dpg.add_table_column(label="Lon", width_fixed=True, init_width_or_weight=80)
 
         with dpg.table_row():
+            dpg.add_button(label="Track")
             dpg.add_text("Coordinates")
             dpg.add_text("40.741")
             dpg.add_text("-73.989")
 
         with dpg.table_row():
+            dpg.add_button(label="Track")
             dpg.add_text("Depth")
             dpg.add_text("30 m")
             dpg.add_text("")
@@ -31,12 +34,14 @@ with dpg.window(label="AUV Data", tag="AUVWin"):
     dpg.add_separator()
 
     with dpg.table(header_row=True):
-        dpg.add_table_column(label="Parameter", width_fixed=True, init_width_or_weight=150)
+        dpg.add_table_column(label="", width_fixed=True, init_width_or_weight=50)
+        dpg.add_table_column(label="", width_fixed=True, init_width_or_weight=150)
         dpg.add_table_column(label="Roll", width_fixed=True, init_width_or_weight=80)
         dpg.add_table_column(label="Pitch", width_fixed=True, init_width_or_weight=80)
         dpg.add_table_column(label="Yaw", width_fixed=True, init_width_or_weight=80)
 
         with dpg.table_row():
+            dpg.add_button(label="Track")
             dpg.add_text("Orientation")
             dpg.add_text("30")
             dpg.add_text("30")
@@ -49,22 +54,26 @@ with dpg.window(label="AUV Data", tag="AUVWin"):
     dpg.add_separator()
 
     with dpg.table(header_row=True):
-        dpg.add_table_column(label="Parameter", width_fixed=True, init_width_or_weight=150)
+        dpg.add_table_column(label="", width_fixed=True, init_width_or_weight=50)
+        dpg.add_table_column(label="", width_fixed=True, init_width_or_weight=150)
         dpg.add_table_column(label="X", width_fixed=True, init_width_or_weight=80)
         dpg.add_table_column(label="Y", width_fixed=True, init_width_or_weight=80)
         dpg.add_table_column(label="Z", width_fixed=True, init_width_or_weight=80)
 
         with dpg.table_row():
+            dpg.add_button(label="Track")
             dpg.add_text("Velocity m/s")
             dpg.add_text("30")
             dpg.add_text("30")
             dpg.add_text("30")
 
         with dpg.table_row():
+            dpg.add_button(label="Track")
             dpg.add_text("Angular Velocity deg/s")
             dpg.add_text("30")
             dpg.add_text("30")
             dpg.add_text("30")
+
 
 
 dpg.create_viewport(title='AUV Simulator', width=800, height=600)
@@ -74,6 +83,7 @@ with dpg.viewport_menu_bar():
     with dpg.menu(label="Settings"):
         dpg.add_menu_item(label="Save Layout", callback=lambda: dpg.save_init_file("layout.ini"))
 
+dpg.show_imgui_demo()
 
 # Setup
 dpg.setup_dearpygui()
