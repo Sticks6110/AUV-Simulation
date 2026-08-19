@@ -4,6 +4,7 @@
 from pandas import DataFrame
 import numpy as np
 import math
+import ocean_sim
 
 class Motor:
     """
@@ -37,14 +38,16 @@ class Motor:
     def set_throttle(self, throttle: float):
         """
         Sets the throttle of the motor. Should be a value
-        between 0 and 1.
+        between -1 and 1.
         """
-        self._throttle = np.clip(throttle, 0.0, 1.0)
+        self._throttle = np.clip(throttle, -1.0, 1.0)
 
     def get_power(self) -> float:
         """
         Returns the current motor power consumption in watts.
         """
+        if(self._throttle < 0):
+            return self._max_power * -self._throttle
         return self._max_power * self._throttle
     
     def get_thrust(self):
@@ -55,15 +58,16 @@ class Motor:
         rpm = self._throttle * self._max_rpm
         rps = rpm / 60.0
 
-        return self._ct * self._water_density * (rps ** 2) * (self._diameter ** 4)
+        return self._ct * self._water_density * (rps * abs(rps)) * (self._diameter ** 4)
 
 class AUVSim:
     """
     Physics simulation for the AUV.
     """
 
-    def __init__(self, mass: float, drag_cof: float, ballast_max: float, battery_max: float, battery_consumption: float):
+    def __init__(self, ocean_sim: ocean_sim.OceanSim, mass: float, drag_cof: float, ballast_max: float, battery_max: float, battery_consumption: float, motor_wattage: float, motor_rpm: float, motor_thrust_cof: float):
         """
+        Ocean Sim: Ocean simulator used to get ocean data
         Mass: Kilograms
         Drag COF: Dimensionless Quantity
         Motor Force: Newtons
@@ -71,6 +75,8 @@ class AUVSim:
         Battery_Max: The batteries watt-hours.
         Battery_Consumption: The ammount of watts consumed in a second during normal activity (WITHOUT THE MOTORS)
         """
+
+        self._ocean = ocean_sim
 
         self._mass = mass
         self._drag_cof = drag_cof
@@ -83,9 +89,9 @@ class AUVSim:
         self._battery_mass = battery_max * 0.003
         self._battery_consumption = battery_consumption
 
-        self._left_motor = Motor(500, 3000, 0.1, 0.1)
-        self._center_motor = Motor(750, 5000, 0.1, 0.1)
-        self._right_motor = Motor(500, 3000, 0.1, 0.1)
+        self._left_motor = Motor(motor_wattage, motor_rpm, motor_thrust_cof, 0.1)
+        self._center_motor = Motor(motor_wattage, motor_rpm, motor_thrust_cof, 0.1)
+        self._right_motor = Motor(motor_wattage, motor_rpm, motor_thrust_cof, 0.1)
 
         self._left_motor_pos = np.array([
             -0.1225,    #east
@@ -148,6 +154,10 @@ class AUVSim:
                 total_force += force
                 total_torque += np.cross(world_position, force)
 
+        # Angular Drag (Not Realistic Yet)
+        angular_drag = -0.5 * self._angular_velocity
+        total_torque += angular_drag
+
         # Angular acceleration
         angular_acceleration = (
             total_torque / self.get_inertia()
@@ -163,6 +173,9 @@ class AUVSim:
             self._angular_velocity * delta_time
         )
 
+        # Wrap orientation
+        self._orientation = (self._orientation + np.pi) % (2 * np.pi) - np.pi
+
         # Gravity
         gravity_force = self.get_mass() * -9.81 * np.array([0, 0, 1.0])
         total_force += gravity_force
@@ -173,7 +186,7 @@ class AUVSim:
             total_force += buoyancy_force
 
         # Drag
-        drag_force = 0.5 * 1025 * (self._velocity ** 2) * self._drag_cof * 0.015
+        drag_force = -(0.5 * 1025 * self._velocity * np.abs(self._velocity) * self._drag_cof * 0.015)
         total_force += drag_force
 
         # Acceleration
@@ -194,35 +207,47 @@ class AUVSim:
         Powers the middle motor for forward movement.
         ammount: 0-1 range
         """
+        if(self._battery <= 0):
+            return
+        
+        self._center_motor.set_throttle(ammount)
+
         self._battery -= self._center_motor.get_power() * self._delta_time / 3600.0
         self._battery = np.clip(self._battery, 0, self._battery_max)
-
-        self._center_motor.set_throttle(ammount)
 
     def power_left_motor(self, ammount: float):
         """
         Powers the left motor for rightward movement.
         ammount: 0-1 range
         """
-        self._battery -= self._left_motor.get_power() * self._delta_time / 3600.0
-        self._battery = np.clip(self._battery, 0, self._battery_max)
+        if(self._battery <= 0):
+            return
         
         self._left_motor.set_throttle(ammount)
+
+        self._battery -= self._left_motor.get_power() * self._delta_time / 3600.0
+        self._battery = np.clip(self._battery, 0, self._battery_max)
 
     def power_right_motor(self, ammount: float):
         """
         Powers the right motor for leftward movement.
         ammount: 0-1 range
         """
+        if(self._battery <= 0):
+            return
+        
+        self._right_motor.set_throttle(ammount)
+
         self._battery -= self._right_motor.get_power() * self._delta_time / 3600.0
         self._battery = np.clip(self._battery, 0, self._battery_max)
-
-        self._right_motor.set_throttle(ammount)
 
     def set_ballast(self, ammount: float):
         """
         Sets the ammount of water inside of the ballast tank, quantity in liters.
         """
+        if(self._battery <= 0):
+            return
+        
         self._ballast = np.clip(ammount, 0.0, self._ballast_max)
 
     def get_inertia(self) -> np.array:
@@ -245,12 +270,57 @@ class AUVSim:
         """
         return self._mass + self._battery_mass + self._ballast
 
+    def get_mass_no_ballast(self) -> float:
+        """
+        Calculates the dry mass for the AUV
+        wich is just the mass provided and the battery mass.
+        """
+        return self._mass + self._battery_mass
+
     def get_battery_percent(self) -> float:
         """
         Returns the percent of the battery that is left.
         Range of 0-1.
         """
         return self._battery / self._battery_max
+
+    def get_orientation(self):
+        """
+        Returns the orientation of the AUV.
+        """
+        return self._orientation
+
+    def get_position(self):
+        """
+        Returns the position of the AUV.
+        """
+        return self._position
+
+    def get_ang_velocity(self):
+        """
+        Returns the angular velocity of the AUV.
+        """
+        return self._angular_velocity
+
+    def get_velocity(self):
+        """
+        Returns the velocity of the AUV.
+        """
+        return self._velocity
+
+    def get_ballast(self):
+        """
+        Returns the ammount of water in
+        the ballast tank in liters.
+        """
+        return self._ballast
+
+    def get_max_ballast(self):
+        """
+        Returns the maximum capacity of the
+        ballast tank in liters.
+        """
+        return self._ballast_max
 
     def get_rotation_matrix(self) -> np.ndarray:
         """
@@ -297,3 +367,4 @@ class AUVSim:
 
     def __str__(self) -> str:
         return "(X, Y, Z) : " + str(self._position)  + " | (roll, pitch, yaw) : " + str(self._orientation) + " | Velocity : " + str(self._velocity)
+    

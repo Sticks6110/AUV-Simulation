@@ -2,9 +2,13 @@
 # Date Created: 8/16/26
 
 import xarray as xr
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import numpy as np
 from pandas import DataFrame
 
-def load_bathymetry_data(nc_file: str) -> DataFrame:
+def load_bathymetry_data(nc_file: str):
     """
 
     """

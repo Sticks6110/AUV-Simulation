@@ -1,11 +1,12 @@
 # Author: Brennan Werner
 # Date Created: 8/16/26
 
-import argparse
+import numpy as np
 
 import data
 from ocean_sim import OceanSim
 from auv_sim import AUVSim
+from auv_drive import AUVDrive
 
 def get_input(auv: AUVSim):
     left = float(input("Left Throttle 0-1: "))
@@ -25,16 +26,11 @@ def get_input(auv: AUVSim):
     get_input(auv)
 
 if __name__ == '__main__':
-    # Argument Parsing
-    #parser = argparse.ArgumentParser(description="An AUV Simulation.")
-
-    #parser.add_argument("depthdata", type=str, help="The path to the NetCDF depth data.")
-
-    #args = parser.parse_args()
-
     # Simulation
-    #depth_data = data.load_bathymetry_data(args.depthdata)
+    depth_data = data.load_bathymetry_data("Data/gebco_2026_n35.0_s30.0_w-75.0_e-70.0.nc")
 
-    #ocean = OceanSim(depth_data)
-    auv = AUVSim(10, 0.15, 5, 500)
-    get_input(auv)
+    ocean = OceanSim(depth_data)
+    auv = AUVSim(ocean, 8, 0.25, 10, 1000, 20, 390, 3600, 0.01)
+    drive = AUVDrive(auv, np.array([[0, 50, -25], [100, 0, -25], [250, 250, -20], [250, 200, 0]]))
+
+    drive.run()
