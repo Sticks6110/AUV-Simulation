@@ -94,6 +94,8 @@ class AUVDrive:
             else:
                 ballast = neutral_ballast
 
+            ballast = np.clip(ballast, 0.0, max_ballast)
+
             self._sim.set_ballast(ballast)
 
             # Step the physics simulation
