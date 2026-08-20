@@ -7,6 +7,7 @@ import data
 from ocean_sim import OceanSim
 from auv_sim import AUVSim
 from auv_drive import AUVDrive
+from gui import GUI
 
 def get_input(auv: AUVSim):
     left = float(input("Left Throttle 0-1: "))
@@ -27,10 +28,16 @@ def get_input(auv: AUVSim):
 
 if __name__ == '__main__':
     # Simulation
-    depth_data = data.load_bathymetry_data("Data/gebco_2026_n35.0_s30.0_w-75.0_e-70.0.nc")
+    #depth_data = data.load_bathymetry_data("Data/gebco_2026_n35.0_s30.0_w-75.0_e-70.0.nc")
 
-    ocean = OceanSim(depth_data)
-    auv = AUVSim(ocean, 8, 0.25, 10, 1000, 20, 390, 3600, 0.01)
-    drive = AUVDrive(auv, np.array([[0, 50, -25], [100, 0, -25], [250, 250, -20], [250, 200, 0]]))
+    #ocean = OceanSim(depth_data)
+    #auv = AUVSim(ocean, 8, 0.25, 10, 1000, 20, 390, 3600, 0.01)
+    #drive = AUVDrive(auv, np.array([[0, 50, -25], [100, 0, -25], [250, 250, -20], [250, 200, 0]]))
 
-    drive.run()
+    #drive.run()
+    gui = GUI()
+
+    done = False
+    while(not done):
+        if(not gui.step()):
+            done = True
