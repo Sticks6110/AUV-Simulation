@@ -322,6 +322,12 @@ class AUVSim:
         """
         return self._ballast_max
 
+    def get_speed(self):
+        """
+        Returns the magnitude of the velocity.
+        """
+        return np.linalg.norm(self._velocity)
+
     def get_rotation_matrix(self) -> np.ndarray:
         """
         Returns the rotation matrix of the AUV.
