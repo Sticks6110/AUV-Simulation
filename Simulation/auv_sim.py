@@ -4,7 +4,6 @@
 from pandas import DataFrame
 import numpy as np
 import math
-import ocean_sim
 
 class Motor:
     """
@@ -65,9 +64,8 @@ class AUVSim:
     Physics simulation for the AUV.
     """
 
-    def __init__(self, ocean_sim: ocean_sim.OceanSim, mass: float, drag_cof: float, ballast_max: float, battery_max: float, battery_consumption: float, motor_wattage: float, motor_rpm: float, motor_thrust_cof: float):
+    def __init__(self, mass: float, drag_cof: float, ballast_max: float, battery_max: float, battery_consumption: float, motor_wattage: float, motor_rpm: float, motor_thrust_cof: float):
         """
-        Ocean Sim: Ocean simulator used to get ocean data
         Mass: Kilograms
         Drag COF: Dimensionless Quantity
         Motor Force: Newtons
@@ -75,8 +73,6 @@ class AUVSim:
         Battery_Max: The batteries watt-hours.
         Battery_Consumption: The ammount of watts consumed in a second during normal activity (WITHOUT THE MOTORS)
         """
-
-        self._ocean = ocean_sim
 
         self._mass = mass
         self._drag_cof = drag_cof

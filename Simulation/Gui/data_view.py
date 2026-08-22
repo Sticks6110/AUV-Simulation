@@ -18,17 +18,9 @@ class DataView:
             with dpg.theme_component(dpg.mvText):
                 dpg.add_theme_color(dpg.mvThemeCol_Text, (50, 100, 255))
 
-        #Tracking Theme
-        with dpg.theme() as self._tracking_theme:
-            with dpg.theme_component(dpg.mvButton):
-                dpg.add_theme_color(dpg.mvThemeCol_Button, (255, 50, 100))
-                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (230, 25, 75))
-                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (255, 75, 125))
-
         with dpg.window(label="Data"):
             self.section_header("POSITION")
             with dpg.table(header_row=False, borders_innerH=True, borders_outerH=False, borders_innerV=False, borders_outerV=False):
-                dpg.add_table_column(width_fixed=True, width=50)
                 dpg.add_table_column()
                 dpg.add_table_column()
                 self.row("Latitude", "Latitude", "0.000000 °")
@@ -37,7 +29,6 @@ class DataView:
 
             self.section_header("VELOCITY (m/s)")
             with dpg.table(header_row=False, borders_innerH=True, borders_outerH=False, borders_innerV=False, borders_outerV=False):
-                dpg.add_table_column(width_fixed=True, width=50)
                 dpg.add_table_column()
                 dpg.add_table_column()
                 self.row("X", "Velocity X", "0.000 (m/s)")
@@ -47,7 +38,6 @@ class DataView:
 
             self.section_header("ORIENTATION")
             with dpg.table(header_row=False, borders_innerH=True, borders_outerH=False, borders_innerV=False, borders_outerV=False):
-                dpg.add_table_column(width_fixed=True, width=50)
                 dpg.add_table_column()
                 dpg.add_table_column()
                 self.row("Yaw", "Yaw", "0.000 °")
@@ -56,7 +46,6 @@ class DataView:
 
             self.section_header("ANGULAR VELOCITY (°/s)")
             with dpg.table(header_row=False, borders_innerH=True, borders_outerH=False, borders_innerV=False, borders_outerV=False):
-                dpg.add_table_column(width_fixed=True, width=50)
                 dpg.add_table_column()
                 dpg.add_table_column()
                 self.row("Yaw", "Yaw Velocity", "0.000 (°/s)")
@@ -66,7 +55,6 @@ class DataView:
             self.section_header("CURRENT CHECKPOINT")
 
             with dpg.table(header_row=False, borders_innerH=True, borders_outerH=False, borders_innerV=False, borders_outerV=False):
-                dpg.add_table_column(width_fixed=True, width=50)
                 dpg.add_table_column()
                 dpg.add_table_column()
                 self.row("Latitude", "Checkpoint Latitude", "0.000000 °")
@@ -94,7 +82,6 @@ class DataView:
 
             self.section_header("MISC")
             with dpg.table(header_row=False, borders_innerH=True, borders_outerH=False, borders_innerV=False, borders_outerV=False):
-                dpg.add_table_column(width_fixed=True, width=50)
                 dpg.add_table_column()
                 dpg.add_table_column()
                 self.row("Mass", "Mass", "0.00 Kg")
@@ -108,32 +95,12 @@ class DataView:
         for name, value in values.items():
             dpg.set_value(name, value[1])
 
-    def row_track_pressed(self, button):
-        """
-        
-        """
-        if(button in self._tracking):
-            self._tracking[button] = not self._tracking[button]
-
-            if(self._tracking[button]):
-                theme = self._tracking_theme
-            else:
-                theme = None
-
-            dpg.bind_item_theme(button, theme)
-            return self._tracking[button]
-        else:
-            self._tracking[button] = True
-            dpg.bind_item_theme(button, self._tracking_theme)
-            return True
-
     def row(self, label: str, tag: str, placeholder: str):
         """
         Creates a row to disable data in a table. Adds
         a tracking button, a label, and the data entry.
         """
         with dpg.table_row():
-            b = dpg.add_button(label="Track", callback=self.row_track_pressed)
             dpg.add_text(label)
             dpg.add_text(placeholder, tag=tag)
 

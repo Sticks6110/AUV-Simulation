@@ -10,11 +10,11 @@ from pandas import DataFrame
 import data
 
 class Oscilloscope:
-    def __init__(self, max_seconds=10.0):
-        self.max_seconds = max_seconds
-        self.start_time = time.perf_counter()
+    def __init__(self, max_seconds=25.0):
+        self._max_seconds = max_seconds
+        self._time = 0
 
-        self.data = {}
+        self._data = {}
 
         with dpg.window(label="Oscilloscope", tag="oscilloscope_window",):
             with dpg.plot(label="", height=-1, width=-1, tag="oscilloscope_plot"):
@@ -26,7 +26,7 @@ class Oscilloscope:
                     pass
 
     def add_variable(self, name):
-        self.data[name] = {
+        self._data[name] = {
             "time": deque(maxlen=1000),
             "value": deque(maxlen=1000),
         }
@@ -34,21 +34,22 @@ class Oscilloscope:
         dpg.add_line_series([], [], label=name, parent="osc_y_axis", tag=f"series_{name}")
 
     def update(self, values):
-        now = time.perf_counter() - self.start_time
+        now = self._time + 0.2
+        self._time += 0.2
 
         for name, value in values.items():
 
-            if name not in self.data:
+            if name not in self._data:
                 continue
 
-            self.data[name]["time"].append(now)
-            self.data[name]["value"].append(value[0])
+            self._data[name]["time"].append(now)
+            self._data[name]["value"].append(value[0])
 
             dpg.set_value(f"series_{name}",
                 [
-                    list(self.data[name]["time"]),
-                    list(self.data[name]["value"]),
+                    list(self._data[name]["time"]),
+                    list(self._data[name]["value"]),
                 ],
             )
 
-        dpg.set_axis_limits("osc_x_axis", max(0, now - self.max_seconds), max(self.max_seconds, now))
+        dpg.set_axis_limits("osc_x_axis", max(0, now - self._max_seconds), max(self._max_seconds, now))

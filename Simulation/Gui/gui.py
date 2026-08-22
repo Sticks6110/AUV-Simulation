@@ -17,6 +17,8 @@ class GUI:
     """
 
     def __init__(self):
+        self._destroyed = False
+
         dpg.create_context()
         dpg.configure_app(docking=True, docking_space=True, load_init_file="layout.ini")
         
@@ -57,8 +59,6 @@ class GUI:
         # Setup
         dpg.setup_dearpygui()
         dpg.show_viewport()
-
-        self._destroyed = False
 
     def __del__(self):
         if(not self._destroyed):

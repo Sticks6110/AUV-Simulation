@@ -4,6 +4,7 @@
 import auv_sim
 import numpy as np
 import math
+import time
 from Gui.gui import GUI
 
 class AUVDrive:
@@ -47,6 +48,9 @@ class AUVDrive:
         Manually steps the drive simulation. Returns
         true if done (completed or error), false if not.
         """
+        if(self._progress >= len(self._checkpoints)):
+            return True
+        
         # Checks
         position = self._sim.get_position()
 
@@ -122,7 +126,7 @@ class AUVDrive:
         self._sim.set_ballast(ballast)
 
         # Step the physics simulation
-        self._sim.step_time(0.01)
+        self._sim.step_time(0.02)
 
         return False
 
@@ -130,10 +134,10 @@ class AUVDrive:
         """
         Converts a local coordinate to latitude and longitude.
         """
-        meters_per_degree_lat = 111_320
+        meters_per_degree_lat = 111320
 
         meters_per_degree_lon = (
-            111_320 * math.cos(math.radians(origin_lat))
+            meters_per_degree_lat * math.cos(math.radians(origin_lat))
         )
 
         latitude = origin_lat + y / meters_per_degree_lat
@@ -177,7 +181,7 @@ class AUVDrive:
                 (i < self._progress)
             ))
 
-        self._gui.update({
+        update_dictionary = {
             "Latitude": (lat, f"{lat:.6f} °"),
             "Longitude": (lon, f"{lon:.6f} °"),
             "Depth": (pos[2], f"{pos[2]:.3f} m"),
@@ -191,9 +195,6 @@ class AUVDrive:
             "Roll Velocity": (ang_vel[0], f"{ang_vel[0]:.3f} (°/s)"),
             "Pitch Velocity": (ang_vel[1], f"{ang_vel[1]:.3f} (°/s)"),
             "Yaw Velocity": (ang_vel[2], f"{ang_vel[2]:.3f} (°/s)"),
-            "Checkpoint Latitude": (self._checkpoints[self._progress][1][0], f"{self._checkpoints[self._progress][1][0]:.6f} °"),
-            "Checkpoint Longitude": (self._checkpoints[self._progress][1][1], f"{self._checkpoints[self._progress][1][1]:.6f} °"),
-            "Checkpoint Depth": (self._checkpoints[self._progress][0][2], f"{self._checkpoints[self._progress][0][2]:.3f} m"),
             "Checkpoint Distance": (self._distance, f"{self._distance:.3f} m"),
             "Mass": (mass, f"{mass:.3f} Kg"),
             "Ballast": (ballast, f"{ballast:.3f} L / {max_ballast:.3f} L"),
@@ -201,4 +202,12 @@ class AUVDrive:
             "Left Throttle": (self._left_throttle, f"{self._left_throttle:.3f}"),
             "Center Throttle": (self._cent_throttle, f"{self._cent_throttle:.3f}"),
             "Right Throttle": (self._right_throttle, f"{self._right_throttle}"),
-        }, checkpoints)
+        }
+
+        if self._progress < len(self._checkpoints):
+            checkpoint = self._checkpoints[self._progress]
+            update_dictionary["Checkpoint Latitude"] = (self._checkpoints[self._progress][1][0], f"{self._checkpoints[self._progress][1][0]:.6f} °")
+            update_dictionary["Checkpoint Longitude"] = (self._checkpoints[self._progress][1][0], f"{self._checkpoints[self._progress][1][1]:.6f} °")
+            update_dictionary["Checkpoint Depth"] = (self._checkpoints[self._progress][1][0], f"{self._checkpoints[self._progress][0][2]:.6f} °")
+
+        self._gui.update(update_dictionary, checkpoints)
